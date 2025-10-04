@@ -1,0 +1,45 @@
+name: Submit to IndexNow (Advanced)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  notify-indexnow:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Extract URLs from sitemap
+        id: extract_urls
+        run: |
+          # Download sitemap and extract URLs
+          curl -s https://valts.online/sitemap.xml > sitemap.xml
+          
+          # Extract URLs using grep and sed
+          URLS=$(grep -oP '(?<=<loc>)[^<]+' sitemap.xml | sed 's/$/",/' | sed 's/^/"/' | tr -d '\n' | sed 's/,$//')
+          
+          echo "urls=$URLS" >> $GITHUB_OUTPUT
+          
+          cat sitemap.xml
+      
+      - name: Submit to IndexNow
+        run: |
+          curl -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"host\": \"valts.online\",
+              \"key\": \"${{ secrets.INDEXNOW_KEY }}\",
+              \"keyLocation\": \"https://valts.online/${{ secrets.INDEXNOW_KEY }}.txt\",
+              \"urlList\": [${{ steps.extract_urls.outputs.urls }}]
+            }"
+      
+      - name: Success notification
+        run: |
+          echo "✅ Successfully submitted URLs to IndexNow!"
+          echo "Submitted URLs:"
+          echo "${{ steps.extract_urls.outputs.urls }}"
