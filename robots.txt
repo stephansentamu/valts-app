@@ -1,4 +1,3 @@
 User-agent: *
-Disallow:
-
-Sitemap: https://valts.online/sitemap.xml
+   Allow: /
+   Sitemap: https://valts.online/sitemap.xml
